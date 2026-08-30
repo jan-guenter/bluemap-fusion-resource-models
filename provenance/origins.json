@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "component": "bluemap-fusion-resource-models",
+  "version": "0.1.0-alpha.1",
+  "canonical_origin": {
+    "repository": "https://github.com/jan-guenter/bluemap-rechiseled-addon",
+    "release_source_commit": "8588d99388c213b938d79931dd6d9e9ef8e4099c",
+    "earliest_matching_history_commit": "1bf9b107a06ee60c979bbd92fdb356004e350ab4",
+    "license": "MIT",
+    "scope": "independently authored Fusion orientation and selection behavior"
+  },
+  "bluemap_abi": {
+    "version": "5.22",
+    "backport_commit": "9be321df995a1103808621d529eb72773e719d4d",
+    "api_commit": "285c9a60eff3ac2b0cab308ce1058d1565be0971",
+    "release_jar_sha256": "749f7647fa29764cea113114a7ab3259271bab3da22720989f2bd9fd1f3ba150",
+    "license": "MIT",
+    "use": "compile-only Direction ABI for TextureOrientation; no BlueMap class is bundled"
+  },
+  "fusion_runtime_evidence": {
+    "version": "1.3.12",
+    "filename": "fusion-1.3.12-neoforge-mc1.21.1.jar",
+    "bytes": 923270,
+    "sha256": "17f5215648a98bcde4134577b013200dbf363273ae282449c51408ae8346f2fa",
+    "declared_license": "All rights reserved",
+    "reference_source_commit": "bace466e1c4f116ff2df535aadab690c81160a0e",
+    "use": "runtime schemas and observable behavior only; no code or assets copied"
+  },
+  "transformation": {
+    "exact_helpers": "Only the package declaration changes from the Rechiseled origin.",
+    "selector": "The package and TextureLayout type name change, and the Javadoc counts all six enum constants. Executable source is otherwise exact.",
+    "layout": "The neutral enum projects only the six exact Rechiseled layout names. Wire parsing and sheet dimensions remain consumer-owned."
+  },
+  "exact_sources": [
+    {
+      "origin_path": "src/main/java/io/github/janguenter/bluemap/rechiseled/model/AxisVector.java",
+      "production_path": "src/main/java/io/github/janguenter/bluemap/resource/fusion/model/AxisVector.java",
+      "oracle_path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/AxisVector.java",
+      "sha256": "9db0039dd0ea94ce970a402e3ca5f583e02650490711c6606c1757284d26214d",
+      "portfolio_package_normalized_sha256": "bc9635e04c0e94e82fc6a133d3dd842f865da6cf02f2edaa148536e520dcf01a"
+    },
+    {
+      "origin_path": "src/main/java/io/github/janguenter/bluemap/rechiseled/model/FusionDirection.java",
+      "production_path": "src/main/java/io/github/janguenter/bluemap/resource/fusion/model/FusionDirection.java",
+      "oracle_path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/FusionDirection.java",
+      "sha256": "5f2809cfb4e651bb849c721764ca60afc335fde494fccc1604018f7242540ef4",
+      "portfolio_package_normalized_sha256": "39fdf3a686436c6562ae68ac135b9165c742b678d49c1de128a0169ef6a0cc09"
+    },
+    {
+      "origin_path": "src/main/java/io/github/janguenter/bluemap/rechiseled/model/TextureOrientation.java",
+      "production_path": "src/main/java/io/github/janguenter/bluemap/resource/fusion/model/TextureOrientation.java",
+      "oracle_path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/TextureOrientation.java",
+      "sha256": "8c6f32ac07cd839627e2a89e995bdab42444306c6755234d5c98679d2372392c",
+      "portfolio_package_normalized_sha256": "1b874ea526bc76b827a8e34f3084ad29186ec7b8a2d6269407f84b28297cc61a"
+    }
+  ],
+  "selector_source": {
+    "origin_path": "src/main/java/io/github/janguenter/bluemap/rechiseled/model/FusionTextureSelector.java",
+    "production_path": "src/main/java/io/github/janguenter/bluemap/resource/fusion/model/FusionTextureSelector.java",
+    "oracle_path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/FusionTextureSelector.java",
+    "sha256": "351b3b5da865877ce86ad77ce56de59e4a4ea89d4ffbc98c8ad0a6e6fa3b967d",
+    "rechiseled_pair_package_normalized_sha256": "2957824dd34376023ac95d25e4a21defcf8eaee562354cfc0bbc98c5b46b9967"
+  },
+  "layout_projection": {
+    "origin_path": "src/main/java/io/github/janguenter/bluemap/rechiseled/profile/TextureLayout.java",
+    "origin_oracle_path": "src/test/java/io/github/janguenter/bluemap/rechiseled/profile/TextureLayout.java",
+    "origin_sha256": "ce75a8631b543a3e1db233facccdf053e01a791633c9cc54565b5e777ce98413",
+    "production_path": "src/main/java/io/github/janguenter/bluemap/resource/fusion/model/FusionTextureLayout.java",
+    "production_sha256": "fb494b05b5f0601afda0b21783345165a4f5632ba82b5caaf3573fef59c33584",
+    "constant_names": [
+      "PLAIN",
+      "PIECED",
+      "FULL",
+      "HORIZONTAL",
+      "VERTICAL",
+      "SIMPLE"
+    ]
+  },
+  "consumer_oracles": [
+    {
+      "id": "connectedglass",
+      "repository": "https://github.com/jan-guenter/bluemap-connectedglass-addon",
+      "release_source_commit": "4a4eb5030d18f1e54cd5a8ad1c2dc093a187ac06",
+      "current_main_with_identical_sources": "55dc1a0c5a12a02b204c95ab96d3bec044568abf",
+      "allowed_layouts": ["PLAIN", "PIECED"],
+      "sources": [
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/connectedglass/model/FusionDirection.java",
+          "sha256": "4df40bba4a96e45856f245dd946f63cad337419465e9295596b4485482fe09d1"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/connectedglass/model/FusionTextureSelector.java",
+          "sha256": "c3b466e7c3845f0262ac8f62caa8328a5aaf3b1855093f2a61b29f35063b6b76"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/connectedglass/profile/TextureLayout.java",
+          "sha256": "26c55552ac277eeb5d533a1431da8cbaf57b9991c5458251298e44d661191a5c"
+        }
+      ]
+    },
+    {
+      "id": "glassential",
+      "repository": "https://github.com/jan-guenter/bluemap-glassential-addon",
+      "release_source_commit": "13fd12412573c62847700d1cfc8e4aa9d2bb5ea1",
+      "current_main_with_identical_sources": "c1c8af752cae298e8a9690db5ea62e6731fddc20",
+      "allowed_layouts": ["PLAIN", "SIMPLE", "FULL", "PIECED"],
+      "sources": [
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/glassential/model/FusionDirection.java",
+          "sha256": "bd9ae4973bbe2d90a47427c312b73b9f99ffa4f1c073ed8d0b1bc825cd4f9c46"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/glassential/model/FusionTextureSelector.java",
+          "sha256": "584150642c845e870297de8efc93548455c7b1393c486e47ed6a82267bf409c2"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/glassential/profile/TextureLayout.java",
+          "sha256": "7ed38483be4e0bd566ce893a560b5a59a529f14a9ecab8fcfe998d70f6595369"
+        }
+      ]
+    },
+    {
+      "id": "rechiseled",
+      "repository": "https://github.com/jan-guenter/bluemap-rechiseled-addon",
+      "release_source_commit": "8588d99388c213b938d79931dd6d9e9ef8e4099c",
+      "current_main_with_identical_sources": "a8ab2d7070d8667fc73112b46977b15b819cef1a",
+      "allowed_layouts": [
+        "PLAIN",
+        "PIECED",
+        "FULL",
+        "HORIZONTAL",
+        "VERTICAL",
+        "SIMPLE"
+      ],
+      "sources": [
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/AxisVector.java",
+          "sha256": "9db0039dd0ea94ce970a402e3ca5f583e02650490711c6606c1757284d26214d"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/FusionDirection.java",
+          "sha256": "5f2809cfb4e651bb849c721764ca60afc335fde494fccc1604018f7242540ef4"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/FusionTextureSelector.java",
+          "sha256": "351b3b5da865877ce86ad77ce56de59e4a4ea89d4ffbc98c8ad0a6e6fa3b967d"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseled/model/TextureOrientation.java",
+          "sha256": "8c6f32ac07cd839627e2a89e995bdab42444306c6755234d5c98679d2372392c"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseled/profile/TextureLayout.java",
+          "sha256": "ce75a8631b543a3e1db233facccdf053e01a791633c9cc54565b5e777ce98413"
+        }
+      ]
+    },
+    {
+      "id": "rechiseled-create",
+      "repository": "https://github.com/jan-guenter/bluemap-rechiseled-create-addon",
+      "release_source_commit": "e1fd8afc1816154a95e224815ca4015528fd0e2e",
+      "current_main_with_identical_sources": "28c508ec804187d340f29626251ad581accc592e",
+      "allowed_layouts": [
+        "PLAIN",
+        "PIECED",
+        "FULL",
+        "HORIZONTAL",
+        "VERTICAL",
+        "SIMPLE"
+      ],
+      "sources": [
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseledcreate/model/FusionDirection.java",
+          "sha256": "e163a1bc1bf343054a64bc35601cd62a78dae9a8b2cced59d98f34ef28b0384e"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseledcreate/model/FusionTextureSelector.java",
+          "sha256": "326ffb28d47bee16a147d8d434ab687c5e26e890555f6a0b7cbfa649c6648da1"
+        },
+        {
+          "path": "src/test/java/io/github/janguenter/bluemap/rechiseledcreate/profile/TextureLayout.java",
+          "sha256": "34d697862f6fa4ef5fc59b3046e6f87ec6eb14e5fbdb446c9872c75df3164afc"
+        }
+      ]
+    }
+  ]
+}

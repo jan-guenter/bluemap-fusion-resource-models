@@ -1,0 +1,307 @@
+// SPDX-License-Identifier: MIT
+
+import groovy.json.JsonSlurper
+import groovy.xml.XmlSlurper
+import org.gradle.api.file.CopySpec
+
+plugins {
+    id 'java-library'
+    id 'checkstyle'
+    id 'maven-publish'
+}
+
+group = module_group
+version = module_version
+
+base {
+    archivesName = artifact_id
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+dependencies {
+    compileOnly "de.bluecolored:bluemap-core:${bluemap_version}"
+
+    testImplementation "de.bluecolored:bluemap-core:${bluemap_version}"
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    options.compilerArgs.addAll(['-Xlint:all', '-Werror'])
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+checkstyle {
+    toolVersion = '10.18.2'
+    configFile = file('config/checkstyle/checkstyle.xml')
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+def archiveMetadata = { CopySpec spec ->
+    spec.from('LICENSE') {
+        into 'META-INF'
+        rename { 'LICENSE-bluemap-fusion-resource-models' }
+    }
+    spec.from('LICENSE-BlueMap') {
+        into 'META-INF'
+    }
+    spec.from('NOTICE.md') {
+        into 'META-INF'
+        rename { 'NOTICE-bluemap-fusion-resource-models.md' }
+    }
+    spec.from('THIRD_PARTY.md') {
+        into 'META-INF'
+        rename { 'THIRD_PARTY-bluemap-fusion-resource-models.md' }
+    }
+    spec.from('provenance/origins.json') {
+        into 'META-INF/bluemap-fusion-resource-models'
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    includeEmptyDirs = false
+    manifest {
+        attributes(
+                'Implementation-Title': 'BlueMap Fusion Resource Models',
+                'Implementation-Version': project.version.toString()
+        )
+    }
+    archiveMetadata(delegate)
+}
+
+tasks.named('sourcesJar', Jar).configure {
+    includeEmptyDirs = false
+    archiveMetadata(delegate)
+}
+
+def binaryJar = tasks.named('jar', Jar).flatMap { it.archiveFile }
+def sourceJar = tasks.named('sourcesJar', Jar).flatMap { it.archiveFile }
+def digest = { File input ->
+    java.security.MessageDigest.getInstance('SHA-256')
+            .digest(input.bytes).encodeHex().toString()
+}
+
+tasks.register('verifyOriginSources') {
+    inputs.files(fileTree('src/main/java'), fileTree('src/test/java'), 'provenance/origins.json')
+    doLast {
+        def provenance = new JsonSlurper().parse(file('provenance/origins.json'))
+        def neutralPackage = 'package io.github.janguenter.bluemap.resource.fusion.model;'
+        def originPackage = 'package io.github.janguenter.bluemap.rechiseled.model;'
+
+        provenance.exact_sources.each { source ->
+            def oracle = file(source.oracle_path)
+            def production = file(source.production_path)
+            def normalized = production.getText('UTF-8')
+                    .replace(neutralPackage, originPackage)
+                    .getBytes('UTF-8')
+            def normalizedHash = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(normalized).encodeHex().toString()
+            if (digest(oracle) != source.sha256 || normalizedHash != source.sha256) {
+                throw new GradleException("Exact source origin mismatch: ${source.origin_path}")
+            }
+        }
+
+        def selector = provenance.selector_source
+        def selectorOracle = file(selector.oracle_path)
+        def selectorProduction = file(selector.production_path)
+        def normalizedSelector = selectorProduction.getText('UTF-8')
+                .replace(
+                        neutralPackage,
+                        originPackage
+                                + '\n\nimport io.github.janguenter.bluemap.rechiseled.profile.TextureLayout;'
+                )
+                .replace('FusionTextureLayout', 'TextureLayout')
+                .replace(
+                        '/** Independently authored selectors for the six exact Fusion sheet layouts. */',
+                        '/** Independently authored selectors for the exact five connected-sheet layouts. */'
+                )
+                .getBytes('UTF-8')
+        def normalizedSelectorHash = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(normalizedSelector).encodeHex().toString()
+        if (digest(selectorOracle) != selector.sha256
+                || normalizedSelectorHash != selector.sha256) {
+            throw new GradleException('FusionTextureSelector origin mismatch')
+        }
+
+        def layout = provenance.layout_projection
+        if (digest(file(layout.origin_oracle_path)) != layout.origin_sha256
+                || digest(file(layout.production_path)) != layout.production_sha256) {
+            throw new GradleException('FusionTextureLayout projection source mismatch')
+        }
+
+        provenance.consumer_oracles.each { consumer ->
+            consumer.sources.each { source ->
+                if (digest(file(source.path)) != source.sha256) {
+                    throw new GradleException(
+                            "Frozen ${consumer.id} oracle mismatch: ${source.path}"
+                    )
+                }
+            }
+        }
+    }
+}
+
+tasks.register('verifyFusionJar') {
+    dependsOn tasks.named('jar')
+    inputs.file(binaryJar)
+    doLast {
+        def packageRoot = 'io/github/janguenter/bluemap/resource/fusion/model/'
+        def expected = [
+                'META-INF/MANIFEST.MF',
+                'META-INF/LICENSE-bluemap-fusion-resource-models',
+                'META-INF/LICENSE-BlueMap',
+                'META-INF/NOTICE-bluemap-fusion-resource-models.md',
+                'META-INF/THIRD_PARTY-bluemap-fusion-resource-models.md',
+                'META-INF/bluemap-fusion-resource-models/origins.json',
+                packageRoot + 'AxisVector.class',
+                packageRoot + 'FusionDirection.class',
+                packageRoot + 'FusionTextureLayout.class',
+                packageRoot + 'FusionTextureSelector.class',
+                packageRoot + 'FusionTextureSelector$1.class',
+                packageRoot + 'TextureOrientation.class',
+                packageRoot + 'TextureOrientation$1.class',
+                packageRoot + 'TextureOrientation$Frame.class'
+        ] as Set
+        def zip = new java.util.zip.ZipFile(inputs.files.singleFile)
+        try {
+            def entries = zip.entries().findAll { !it.directory }.collect { it.name }
+            if (entries.toSet().size() != entries.size() || entries.toSet() != expected) {
+                throw new GradleException("Fusion JAR boundary mismatch: ${entries}")
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+tasks.register('verifyFusionSourcesJar') {
+    dependsOn tasks.named('sourcesJar')
+    inputs.file(sourceJar)
+    doLast {
+        def packageRoot = 'io/github/janguenter/bluemap/resource/fusion/model/'
+        def expected = [
+                'META-INF/MANIFEST.MF',
+                'META-INF/LICENSE-bluemap-fusion-resource-models',
+                'META-INF/LICENSE-BlueMap',
+                'META-INF/NOTICE-bluemap-fusion-resource-models.md',
+                'META-INF/THIRD_PARTY-bluemap-fusion-resource-models.md',
+                'META-INF/bluemap-fusion-resource-models/origins.json',
+                packageRoot + 'AxisVector.java',
+                packageRoot + 'FusionDirection.java',
+                packageRoot + 'FusionTextureLayout.java',
+                packageRoot + 'FusionTextureSelector.java',
+                packageRoot + 'TextureOrientation.java'
+        ] as Set
+        def zip = new java.util.zip.ZipFile(inputs.files.singleFile)
+        try {
+            def entries = zip.entries().findAll { !it.directory }.collect { it.name }
+            if (entries.toSet().size() != entries.size() || entries.toSet() != expected) {
+                throw new GradleException("Fusion sources JAR boundary mismatch: ${entries}")
+            }
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+publishing {
+    publications {
+        fusion(MavenPublication) {
+            from components.java
+            artifactId = artifact_id
+            pom {
+                name = 'BlueMap Fusion Resource Models'
+                description = 'Source-bundled exact Fusion model selection for BlueMap add-ons.'
+                url = 'https://github.com/jan-guenter/bluemap-fusion-resource-models'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/license/mit'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'jan-guenter'
+                        name = 'Jan Guenter'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/jan-guenter/bluemap-fusion-resource-models.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/jan-guenter/bluemap-fusion-resource-models.git'
+                    url = 'https://github.com/jan-guenter/bluemap-fusion-resource-models'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/jan-guenter/bluemap-fusion-resource-models')
+            credentials {
+                username = System.getenv('GITHUB_ACTOR')
+                password = System.getenv('GITHUB_TOKEN')
+            }
+        }
+    }
+}
+
+tasks.register('verifyPublication') {
+    dependsOn tasks.named('generatePomFileForFusionPublication')
+    dependsOn tasks.named('generateMetadataFileForFusionPublication')
+    inputs.files(
+            layout.buildDirectory.file('publications/fusion/pom-default.xml'),
+            layout.buildDirectory.file('publications/fusion/module.json')
+    )
+    doLast {
+        def pom = new XmlSlurper(false, false).parse(
+                layout.buildDirectory.file('publications/fusion/pom-default.xml').get().asFile
+        )
+        if (pom.groupId.text() != project.group.toString()
+                || pom.artifactId.text() != artifact_id
+                || pom.version.text() != project.version.toString()
+                || pom.dependencies.dependency.size() != 0) {
+            throw new GradleException('POM identity or dependency boundary mismatch')
+        }
+
+        def metadata = new JsonSlurper().parse(
+                layout.buildDirectory.file('publications/fusion/module.json').get().asFile
+        )
+        if (metadata.component.group != project.group.toString()
+                || metadata.component.module != artifact_id
+                || metadata.component.version != project.version.toString()
+                || metadata.variants.any {
+                    (it.dependencies ?: []).size() != 0
+                            || (it.dependencyConstraints ?: []).size() != 0
+                }) {
+            throw new GradleException('Gradle module identity or dependency boundary mismatch')
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn tasks.named('verifyOriginSources')
+    dependsOn tasks.named('verifyFusionJar')
+    dependsOn tasks.named('verifyFusionSourcesJar')
+}
